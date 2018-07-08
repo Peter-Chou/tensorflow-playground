@@ -39,14 +39,18 @@ class CharRNN(object):
         with open(filename, 'r') as f:
             text = f.read()
         self.epoch = epoch
+        self.batch_size = batch_size
+        self.num_steps = num_steps
         self.vocab = sorted(set(text))
         self.num_classes = len(self.vocab)
         self._vocab_to_int = {c: i for i, c in enumerate(self.vocab)}
         self._int_to_vocab = dict(enumerate(self.vocab))
         self.encoded = np.array([self._vocab_to_int[c]
                                  for c in text], dtype=np.int32)
-        self.batch_size = batch_size
-        self.num_steps = num_steps
+        chars_per_batches = self.batch_size * self.num_steps
+        n_batches = len(self.encoded) // chars_per_batches
+        self.encoded = self.encoded[:n_batches*chars_per_batches]
+        self.encoded = self.encoded.reshape((self.batch_size, -1))
         self.lstm_size = lstm_size
         self.num_layers = num_layers
         self.learning_rate = learning_rate
@@ -63,14 +67,9 @@ class CharRNN(object):
 
     @property
     def _get_batches(self):
-        chars_per_batches = self.batch_size * self.num_steps
-        n_batches = len(self.encoded) // chars_per_batches
-        self.encoded = self.encoded[:n_batches*chars_per_batches]
-        self.encoded = self.encoded.reshape((self.batch_size, -1))
-
         for n in range(0, self.encoded.shape[1], self.num_steps):
             x = self.encoded[:, n:n+self.num_steps]
-            y_temp = self.encoded[:, n+1:n+self.num_steps]
+            y_temp = self.encoded[:, n+1:n+self.num_steps+1]
 
             y = np.zeros(x.shape, dtype=x.dtype)
             y[:, :y_temp.shape[1]] = y_temp
@@ -155,8 +154,7 @@ class CharRNN(object):
                               '{:.4f} sec/batch'.format((end-start)))
                     if (counter % save_every_n == 0):
                         saver.save(sess, "checkpoints/i{}_l{}.ckpt".format(
-                            counter, self.lstm_size
-                        ))
+                            counter, self.lstm_size))
 
             saver.save(sess, "checkpoints/i{}_l{}.ckpt".format(
                 counter, self.lstm_size))
