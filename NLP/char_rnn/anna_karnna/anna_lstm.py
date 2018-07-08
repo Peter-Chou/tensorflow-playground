@@ -154,13 +154,12 @@ class CharRNN(object):
                               'Training loss: {:.4f}... '.format(batch_loss),
                               '{:.4f} sec/batch'.format((end-start)))
                     if (counter % save_every_n == 0):
-                        saver.save(sess, "checkpoints/i{}_l{}.ckpt").format(
+                        saver.save(sess, "checkpoints/i{}_l{}.ckpt".format(
                             counter, self.lstm_size
-                        )
+                        ))
 
-            saver.save(sess, "checkpoints/i{}_l{}.ckpt").format(
-                counter, self.lstm_size
-            )
+            saver.save(sess, "checkpoints/i{}_l{}.ckpt".format(
+                counter, self.lstm_size))
 
 
 def main():
