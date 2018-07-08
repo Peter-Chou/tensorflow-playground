@@ -41,8 +41,8 @@ class CharRNN(object):
         self.epoch = epoch
         self.vocab = sorted(set(text))
         self.num_classes = len(self.vocab)
-        self._vocab_to_int = {c: i for i, c in enumerate(vocab)}
-        self._int_to_vocab = dict(enumerate(vocab))
+        self._vocab_to_int = {c: i for i, c in enumerate(self.vocab)}
+        self._int_to_vocab = dict(enumerate(self.vocab))
         self.encoded = np.array([self._vocab_to_int[c]
                                  for c in text], dtype=np.int32)
         self.batch_size = batch_size
