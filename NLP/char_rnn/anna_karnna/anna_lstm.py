@@ -144,7 +144,7 @@ class CharRNN(object):
                     }
                     batch_loss, new_state, _ = sess.run([
                         self.loss,
-                        self.final_state
+                        self.final_state,
                         self.optimizer
                     ], feed_dict=feed)
                     if (counter % print_every_n == 0):
