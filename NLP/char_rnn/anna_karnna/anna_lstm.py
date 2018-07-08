@@ -69,8 +69,8 @@ class CharRNN(object):
         self.encoded = self.encoded.reshape((self.batch_size, -1))
 
         for n in range(0, self.encoded.shape[1], self.num_steps):
-            x = self.encoded[:, n:n+num_steps]
-            y_temp = arr[:, n+1:n+num_steps]
+            x = self.encoded[:, n:n+self.num_steps]
+            y_temp = self.encoded[:, n+1:n+self.num_steps]
 
             y = np.zeros(x.shape, dtype=x.dtype)
             y[:, :y_temp.shape[1]] = y_temp
@@ -78,21 +78,21 @@ class CharRNN(object):
 
     def _build_cell(self):
         lstm = tf.contrib.rnn.BasicLSTMCell(self.lstm_size)
-        drop = tf.contrib.rnn.DropoutWrapper(lstm, output_keep_prob=keep_prob)
+        drop = tf.contrib.rnn.DropoutWrapper(
+            lstm, output_keep_prob=self.keep_prob)
         return drop
 
     def _build_lstm(self):
         cell = tf.contrib.rnn.MultiRNNCell(
-            [self._build_cell(self.lstm_size, keep_prob)
-             for _ in range(self.num_layers)]
+            [self._build_cell() for _ in range(self.num_layers)]
         )
-        self.initial_state = self.cell.zero_state(self.batch_size, tf.float32)
+        self.initial_state = cell.zero_state(self.batch_size, tf.float32)
         self.outputs, self.final_state = tf.nn.dynamic_rnn(
-            cell, self.x_one_hot, initial_state=initial_state)
+            cell, self.x_one_hot, initial_state=self.initial_state)
 
     def _build_output(self):
         seq_output = tf.concat(self.outputs, axis=1)
-        x = tf.reshape(seq_output, [-1, in_size])
+        x = tf.reshape(seq_output, [-1, self.lstm_size])
 
         with tf.variable_scope("softmax"):
             softmax_w = tf.get_variable(
@@ -103,14 +103,14 @@ class CharRNN(object):
                 initializer=tf.zeros_initializer())
 
         self.logits = tf.matmul(x, softmax_w) + softmax_b
-        self.prediction = tf.nn.softmax(logits, name="predictions")
+        self.prediction = tf.nn.softmax(self.logits, name="predictions")
 
     def _build_loss(self):
         y_one_hot = tf.one_hot(self.targets, self.num_classes)
         y_shaped = tf.reshape(y_one_hot, self.logits.get_shape())
         self.loss = tf.nn.softmax_cross_entropy_with_logits_v2(
             logits=self.logits, labels=y_shaped)
-        self.loss = tf.reduce_mean(loss)
+        self.loss = tf.reduce_mean(self.loss)
 
     def _build_optimizer(self):
         tvars = tf.trainable_variables()
