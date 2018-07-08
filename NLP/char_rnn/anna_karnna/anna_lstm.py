@@ -22,12 +22,13 @@ KEEP_PROB = 0.5
 EPOCH = 20
 PRINT_EVERY_N = 50
 SAVE_EVERY_N = 200
+GRAD_CLIP = 5
 
 
 class CharRNN(object):
     """char-rnn model intend to read txt file"""
 
-    def __init__(self, filename, batch_size, num_steps, lstm_size,
+    def __init__(self, filename, epoch, keep_prob, batch_size, num_steps, lstm_size,
                  num_layers, learning_rate, grad_clip, sampling=False):
         """initialize model and load file to create dict
 
@@ -37,6 +38,7 @@ class CharRNN(object):
 
         with open(filename, 'r') as f:
             text = f.read()
+        self.epoch = epoch
         self.vocab = sorted(set(text))
         self.num_classes = len(self.vocab)
         self._vocab_to_int = {c: i for i, c in enumerate(vocab)}
@@ -50,6 +52,7 @@ class CharRNN(object):
         self.learning_rate = learning_rate
         self.grad_clip = grad_clip
         self.sampling = sampling
+        self.keep_prob = keep_prob
 
     def _build_input(self):
         self.inputs = tf.placeholder(
@@ -57,8 +60,8 @@ class CharRNN(object):
         self.x_one_hot = tf.one_hot(self.inputs, self.num_classes)
         self.targets = tf.placeholder(
             tf.int32, shape=[self.batch_size, self.num_steps], name="targets")
-        self.keep_prob = tf.placeholder(tf.float32, name="keep_prob")
 
+    @property
     def _get_batches(self):
         chars_per_batches = self.batch_size * self.num_steps
         n_batches = len(self.encoded) // chars_per_batches
@@ -83,7 +86,7 @@ class CharRNN(object):
             [self._build_cell(self.lstm_size, keep_prob)
              for _ in range(self.num_layers)]
         )
-        initial_state = self.cell.zero_state(self.batch_size, tf.float32)
+        self.initial_state = self.cell.zero_state(self.batch_size, tf.float32)
         self.outputs, self.final_state = tf.nn.dynamic_rnn(
             cell, self.x_one_hot, initial_state=initial_state)
 
@@ -123,12 +126,49 @@ class CharRNN(object):
         self._build_loss()
         self._build_optimizer()
 
-    def train(self):
-        pass
+    def train(self, print_every_n, save_every_n):
+        saver = tf.train.Saver(max_to_keep=100)
+        with tf.Session() as sess:
+            sess.run(tf.global_variables_initializer())
+            counter = 0
+            for e in range(self.epoch):
+                new_state = sess.run(self.initial_state)
+                loss = 0
+                for x, y in self._get_batches:
+                    counter += 1
+                    start = time.time()
+                    feed = {
+                        self.inputs: x,
+                        self.targets: y,
+                        self.initial_state: new_state
+                    }
+                    batch_loss, new_state, _ = sess.run([
+                        self.loss,
+                        self.final_state
+                        self.optimizer
+                    ], feed_dict=feed)
+                    if (counter % print_every_n == 0):
+                        end = time.time()
+                        print('Epoch: {}/{}... '.format(e+1, self.epoch),
+                              'Training Step: {}... '.format(counter),
+                              'Training loss: {:.4f}... '.format(batch_loss),
+                              '{:.4f} sec/batch'.format((end-start)))
+                    if (counter % save_every_n == 0):
+                        saver.save(sess, "checkpoints/i{}_l{}.ckpt").format(
+                            counter, self.lstm_size
+                        )
+
+            saver.save(sess, "checkpoints/i{}_l{}.ckpt").format(
+                counter, self.lstm_size
+            )
 
 
 def main():
-    model = CharRNN("anna.txt")
+    model = CharRNN("anna.txt", EPOCH, KEEP_PROB, BATCH_SIZE, NUM_STEPS,
+                    LSTM_SIZE, NUM_LAYERS, LEARNING_RATE,
+                    GRAD_CLIP, sampling=False)
+    model.build_network()
+    model.train(PRINT_EVERY_N, SAVE_EVERY_N)
 
 
 if __name__ == '__main__':
