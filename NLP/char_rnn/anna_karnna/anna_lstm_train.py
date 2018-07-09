@@ -39,7 +39,7 @@ class CharRNN(object):
         with open(filename, 'r') as f:
             text = f.read()
         self.epoch = epoch
-        self.keep_prob = keep_prob
+        self.keep_prob = keep_prob if not sampling else 1.
         self.batch_size = batch_size
         self.num_steps = num_steps
         self.lstm_size = lstm_size
@@ -79,6 +79,13 @@ class CharRNN(object):
         drop = tf.contrib.rnn.DropoutWrapper(
             lstm, output_keep_prob=self.keep_prob)
         return drop
+
+    def _pick_top_n(self, preds, top_n=5):
+        p = np.squeeze(preds)
+        p[np.argsort(p)[:-top_n]] = 0
+        p = p / np.sum(p)
+        c = np.random.choice(len(self.vocab), 1, p=p)[0]
+        return c
 
     def _build_lstm(self):
         cell = tf.contrib.rnn.MultiRNNCell(
@@ -157,9 +164,37 @@ class CharRNN(object):
             saver.save(sess, "checkpoints/i{}_l{}".format(
                 counter, self.lstm_size))
 
+    def sample(self, checkpoint, n_samples, prime="The "):
+        samples = [c for c in prime]
+        saver = tf.train.Saver()
+        with tf.Session() as sess:
+            saver.restore(sess, checkpoint)
+            new_state = self.initial_state
+            for c in prime:
+                x = np.zeros((1, 1))
+                x[0, 0] = self._vocab_to_int[c]
+                feed = {
+                    self.inputs: x,
+                    self.initial_state: new_state}
+                preds, new_state = sess.run(
+                    [self.prediction, self.final_state], feed_dict=feed)
+
+            c = self._pick_top_n(preds)
+            samples.append(self._int_to_vocab[c])
+
+            for i in range(n_samples):
+                x[0, 0] = c
+                feed = {
+                    self.inputs: x,
+                    self.initial_state: new_state}
+                preds, new_state = sess.run(
+                    [self.prediction, self.final_state], feed_dict=feed)
+                c = self._pick_top_n(preds)
+                samples.append(self._int_to_vocab[c])
+        return "".join(samples)
+
 
 def main():
-    # TODO: 检查rnn网络是否正确
     model = CharRNN("anna.txt", EPOCH, KEEP_PROB, BATCH_SIZE, NUM_STEPS,
                     LSTM_SIZE, NUM_LAYERS, LEARNING_RATE,
                     GRAD_CLIP, sampling=False)
