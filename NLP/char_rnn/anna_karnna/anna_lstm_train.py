@@ -40,8 +40,8 @@ class CharRNN(object):
             text = f.read()
         self.epoch = epoch
         self.keep_prob = keep_prob if not sampling else 1.
-        self.batch_size = batch_size
-        self.num_steps = num_steps
+        self.batch_size = batch_size if not sampling else 1
+        self.num_steps = num_steps if not sampling else 1
         self.lstm_size = lstm_size
         self.num_layers = num_layers
         self.learning_rate = learning_rate
