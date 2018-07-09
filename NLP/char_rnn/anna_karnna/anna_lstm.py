@@ -28,8 +28,8 @@ GRAD_CLIP = 5
 class CharRNN(object):
     """char-rnn model intend to read txt file"""
 
-    def __init__(self, filename, epoch, keep_prob, batch_size, num_steps, lstm_size,
-                 num_layers, learning_rate, grad_clip, sampling=False):
+    def __init__(self, filename, epoch, keep_prob, batch_size, num_steps,
+                 lstm_size, num_layers, learning_rate, grad_clip, sampling=False):
         """initialize model and load file to create dict
 
         Arguments:
@@ -39,8 +39,14 @@ class CharRNN(object):
         with open(filename, 'r') as f:
             text = f.read()
         self.epoch = epoch
+        self.keep_prob = keep_prob
         self.batch_size = batch_size
         self.num_steps = num_steps
+        self.lstm_size = lstm_size
+        self.num_layers = num_layers
+        self.learning_rate = learning_rate
+        self.grad_clip = grad_clip
+        self.sampling = sampling
         self.vocab = sorted(set(text))
         self.num_classes = len(self.vocab)
         self._vocab_to_int = {c: i for i, c in enumerate(self.vocab)}
@@ -51,12 +57,6 @@ class CharRNN(object):
         n_batches = len(self.encoded) // chars_per_batches
         self.encoded = self.encoded[:n_batches*chars_per_batches]
         self.encoded = self.encoded.reshape((self.batch_size, -1))
-        self.lstm_size = lstm_size
-        self.num_layers = num_layers
-        self.learning_rate = learning_rate
-        self.grad_clip = grad_clip
-        self.sampling = sampling
-        self.keep_prob = keep_prob
 
     def _build_input(self):
         self.inputs = tf.placeholder(
@@ -70,7 +70,6 @@ class CharRNN(object):
         for n in range(0, self.encoded.shape[1], self.num_steps):
             x = self.encoded[:, n:n+self.num_steps]
             y_temp = self.encoded[:, n+1:n+self.num_steps+1]
-
             y = np.zeros(x.shape, dtype=x.dtype)
             y[:, :y_temp.shape[1]] = y_temp
             yield x, y
@@ -83,8 +82,7 @@ class CharRNN(object):
 
     def _build_lstm(self):
         cell = tf.contrib.rnn.MultiRNNCell(
-            [self._build_cell() for _ in range(self.num_layers)]
-        )
+            [self._build_cell() for _ in range(self.num_layers)])
         self.initial_state = cell.zero_state(self.batch_size, tf.float32)
         self.outputs, self.final_state = tf.nn.dynamic_rnn(
             cell, self.x_one_hot, initial_state=self.initial_state)
@@ -115,7 +113,7 @@ class CharRNN(object):
         tvars = tf.trainable_variables()
         grads, _ = tf.clip_by_global_norm(
             tf.gradients(self.loss, tvars), self.grad_clip)
-        train_op = tf.train.AdadeltaOptimizer(self.learning_rate)
+        train_op = tf.train.AdamOptimizer(self.learning_rate)
         self.optimizer = train_op.apply_gradients(zip(grads, tvars))
 
     def build_network(self):
@@ -153,14 +151,15 @@ class CharRNN(object):
                               'Training loss: {:.4f}... '.format(batch_loss),
                               '{:.4f} sec/batch'.format((end-start)))
                     if (counter % save_every_n == 0):
-                        saver.save(sess, "checkpoints/i{}_l{}.ckpt".format(
+                        saver.save(sess, "checkpoints/i{}_l{}".format(
                             counter, self.lstm_size))
 
-            saver.save(sess, "checkpoints/i{}_l{}.ckpt".format(
+            saver.save(sess, "checkpoints/i{}_l{}".format(
                 counter, self.lstm_size))
 
 
 def main():
+    # TODO: 检查rnn网络是否正确
     model = CharRNN("anna.txt", EPOCH, KEEP_PROB, BATCH_SIZE, NUM_STEPS,
                     LSTM_SIZE, NUM_LAYERS, LEARNING_RATE,
                     GRAD_CLIP, sampling=False)
