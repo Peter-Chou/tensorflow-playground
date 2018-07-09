@@ -169,7 +169,7 @@ class CharRNN(object):
         saver = tf.train.Saver()
         with tf.Session() as sess:
             saver.restore(sess, checkpoint)
-            new_state = self.initial_state
+            new_state = sess.run(self.initial_state)
             for c in prime:
                 x = np.zeros((1, 1))
                 x[0, 0] = self._vocab_to_int[c]
