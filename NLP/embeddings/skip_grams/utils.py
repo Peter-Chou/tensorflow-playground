@@ -16,6 +16,20 @@ class DLProgress(tqdm):
 
 
 def download(url, folder_path, filename, pbar_desc="Dataset"):
+    """download dataset
+
+    Arguments:
+        url {str} -- file url address
+        folder_path {str} -- the directory you want to put data in
+        filename {str} -- saved file name
+
+    Keyword Arguments:
+        pbar_desc {str} -- file description in tqdm (default: {"Dataset"})
+
+    Returns:
+        str -- file contents in string object
+    """
+
     if not isfile(filename):
         with DLProgress(
                 unit='B', unit_scale=True, miniters=1, desc=pbar_desc) as pbar:
