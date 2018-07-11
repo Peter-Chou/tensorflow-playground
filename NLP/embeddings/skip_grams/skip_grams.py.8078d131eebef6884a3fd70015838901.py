@@ -191,7 +191,7 @@ def main():
     text = download(URL, DATASET_FOLDER_PATH, DATASET_FILENAME, DATASET_NAME)
     save_mkdir("checkpoints")
     model = SkipGrams(N_COUNTS_TO_KEEP, EPOCHS, BATCH_SIZE, N_EMBEDDING,
-                      N_SAMPLED, N_COUNTS_TO_KEEP)
+    N_SAMPLED,N_COUNTS_TO_KEEP)
     model.build()
     model.train()
 
