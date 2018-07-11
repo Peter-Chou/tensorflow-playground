@@ -111,7 +111,7 @@ class SkipGrams(object):
     def _build_embeddings(self):
         with tf.variable_scope("embeddings"):
             embedding = tf.get_variable(
-                "embed matrx",
+                "embed_matrix",
                 shape=[len(self._int_to_vocab), self.n_embedding],
                 initializer=tf.random_uniform_initializer(-1, 1))
             self.embed = tf.nn.embedding_lookup(embedding, self.inputs)
@@ -127,7 +127,7 @@ class SkipGrams(object):
             self.loss = tf.nn.sampled_softmax_loss(softmax_w, softmax_b,
                                                    self.labels, self.embed,
                                                    self.n_sampled, len(self._int_to_vocab))
-            self.loss = tf.reduce_mean(loss)
+            self.loss = tf.reduce_mean(self.loss)
 
     def _build_optimizer(self):
         with tf.variable_scope("optimizer"):
@@ -190,7 +190,7 @@ class SkipGrams(object):
 def main():
     text = download(URL, DATASET_FOLDER_PATH, DATASET_FILENAME, DATASET_NAME)
     save_mkdir("checkpoints")
-    model = SkipGrams(N_COUNTS_TO_KEEP, EPOCHS, BATCH_SIZE, N_EMBEDDING,
+    model = SkipGrams(text, EPOCHS, BATCH_SIZE, N_EMBEDDING,
                       N_SAMPLED, N_COUNTS_TO_KEEP)
     model.build()
     model.train()
