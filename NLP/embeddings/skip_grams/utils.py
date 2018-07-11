@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import os
 import zipfile
 from os.path import isdir, isfile
 from urllib.request import urlretrieve
@@ -13,6 +14,13 @@ class DLProgress(tqdm):
         self.total = total_size
         self.update((block_num - self.last_block) * block_size)
         self.last_block = block_num
+
+
+def save_mkdir(dirname):
+    """save make directory
+    """
+    if not isdir(dirname):
+        os.mkdir(dirname)
 
 
 def download(url, folder_path, filename, pbar_desc="Dataset"):
