@@ -34,6 +34,22 @@ class SkipGrams(object):
 
     def __init__(self, text, epochs, batch_size, n_embedding, n_sampled,
                  n_counts_to_keep, subsample_threshold=1e-5, window_size=5):
+        """model for learning word embeddings in text file
+
+        Arguments:
+            text {str} -- complete file path name
+            epochs {int} -- training epoches
+            batch_size {int} -- batch size
+            n_embedding {int} -- the length of word vector
+            n_sampled {int} -- number of wrong word chosen in negative sampling
+            n_counts_to_keep {int} -- word counts > n_counts to keep
+
+        Keyword Arguments:
+            subsample_threshold {float} -- sample words when word frequency exceeds
+            theshold, retain still otherwise (default: {1e-5})
+            window_size {int} -- window size in skip grams (default: {5})
+        """
+
         self.text = text
         self.n_counts_to_keep = n_counts_to_keep
         self.subsample_threshold = subsample_threshold
@@ -134,8 +150,7 @@ class SkipGrams(object):
             self.optimizer = tf.train.AdamOptimizer().minimize(self.loss)
 
     def build(self):
-        """build the skip-grams model
-        """
+        """build the skip-grams model"""
         self._preprocess()
         self._subsampling()
         self._build_input()
@@ -144,6 +159,7 @@ class SkipGrams(object):
         self._build_optimizer()
 
     def train(self):
+        """train the model"""
         saver = tf.train.Saver()
         with tf.Session() as sess:
             iteration = 1
