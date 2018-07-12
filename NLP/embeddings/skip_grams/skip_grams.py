@@ -165,12 +165,14 @@ class SkipGrams(object):
                     if iteration % 100 == 0:
                         end = time.time()
 
-                        print("Epoch {}/{}".format(e, epochs),
+                        print("Epoch {}/{}".format(e, self.epochs),
                               "Iteration: {}".format(iteration),
                               "Avg. Training loss: {:.4f}".format(loss/100),
                               "{:.4f} sec/batch".format((end-start)/100))
                         loss = 0
                         start = time.time()
+
+                    iteration += 1
 
                     # if iteration % 1000 == 0:
                     #     # note that this is expensive (~20% slowdown if computed every 500 steps)
