@@ -5,6 +5,7 @@ LABELS_URL = "https://raw.githubusercontent.com/udacity/deep-learning/master/sen
 REVIEWS_FILE = "reviews.txt"
 LABELS_FILE = "labels.txt"
 
+import numpy as np
 import tensorflow as tf
 
 import utils
@@ -100,13 +101,13 @@ class RnnSentiment(object):
                         self.inputs: x,
                         self.labels: y[:, None],
                         self.initial_state: state,
-                        self.keep_prob: 1}
+                        self.keep_prob: 0.5}
                     loss_, state, _ = sess.run([self.cost, self.final_state,
                                                 self.optimizer], feed_dict=feed)
 
                     if iteration % 5 == 0:
                         print(
-                            f"Epoch: {e}/{epochs}",
+                            f"Epoch: {e}/{self.epochs}",
                             f"Iteration: {iteration}",
                             f"Train loss: {loss_:0.3f}"
                         )
@@ -120,7 +121,7 @@ class RnnSentiment(object):
                                 self.inputs: x,
                                 self.labels: y[:, None],
                                 self.initial_state: val_state,
-                                self.keep_prob: 1
+                                self.keep_prob: 1.
                             }
                             batch_acc, val_state = sess.run([
                                 self.accuracy, self.final_state],
@@ -128,7 +129,7 @@ class RnnSentiment(object):
                             val_acc.append(batch_acc)
                         print(f"val acc: {np.mean(val_acc):0.4f}")
                     iteration += 1
-            saver.sass(sess, "checkpoints/sentiment")
+            saver.save(sess, "checkpoints/sentiment")
         print(format("train end", "*^50s"))
 
     def test(self, X, Y):
@@ -141,11 +142,12 @@ class RnnSentiment(object):
             for i, (x, y) in enumerate(self._get_batches(X, Y), 1):
                 feed = {
                     self.inputs: x,
-                    self.labels: y,
-                    self.keep_prob: 1,
+                    self.labels: y[:, None],
+                    self.keep_prob: 1.,
                     self.initial_state: test_state
                 }
-                batch_acc, test_state = sess.run([self.accuracy, self.final_state])
+                batch_acc, test_state = sess.run([self.accuracy, self.final_state],
+                                                 feed_dict=feed)
                 test_acc.append(batch_acc)
             print(f"Test accuracy: {np.mean(test_acc):.3f}")
 
