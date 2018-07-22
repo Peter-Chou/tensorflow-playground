@@ -129,6 +129,25 @@ class RnnSentiment(object):
                         print(f"val acc: {np.mean(val_acc):0.4f}")
                     iteration += 1
             saver.sass(sess, "checkpoints/sentiment")
+        print(format("train end", "*^50s"))
+
+    def test(self, X, Y):
+        test_acc = []
+        saver = tf.train.Saver()
+        print(format("Test start", "*^50s"))
+        with tf.Session() as sess:
+            saver.restore(sess, tf.train.latest_checkpoint("checkpoints"))
+            test_state = sess.run(self.cell.zero_state(self.batch_size, tf.float32))
+            for i, (x, y) in enumerate(self._get_batches(X, Y), 1):
+                feed = {
+                    self.inputs: x,
+                    self.labels: y,
+                    self.keep_prob: 1,
+                    self.initial_state: test_state
+                }
+                batch_acc, test_state = sess.run([self.accuracy, self.final_state])
+                test_acc.append(batch_acc)
+            print(f"Test accuracy: {np.mean(test_acc):.3f}")
 
 
 def main():
@@ -141,6 +160,7 @@ def main():
                          LSTM_SIZE, LEARNING_RATE, EPOCHS)
     model.build()
     model.train(train_x, train_y, val_x, val_y, KEEP_PROB)
+    model.test(test_x, test_y)
 
 
 if __name__ == '__main__':
